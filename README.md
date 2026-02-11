@@ -4,59 +4,31 @@ An MCP server that lets Claude schedule and manage recurring tasks via system cr
 
 Tasks are stored in SQLite, cron handles execution timing, and a runner script calls the Claude API and delivers results.
 
-## Installation
+## Quick install
+
+One command that clones the repo, creates a venv, installs the package, and configures Claude Desktop + Claude Code:
 
 ```bash
-git clone https://github.com/youruser/mcp-scheduler.git
+curl -fsSL https://raw.githubusercontent.com/danielkristofik/mcp-scheduler/main/install.sh | bash
+```
+
+Or manually:
+
+```bash
+git clone https://github.com/danielkristofik/mcp-scheduler.git
 cd mcp-scheduler
-pip install -e ".[runner,dev]"
+pip install -e ".[runner]"
 ```
 
-`runner` pulls in the `anthropic` SDK (needed for cron-triggered task execution).
-`dev` pulls in `pytest` + `pytest-asyncio`.
-
-## Configuration
-
-### Claude Desktop
-
-Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
-
-```json
-{
-  "mcpServers": {
-    "scheduler": {
-      "command": "mcp-scheduler",
-      "env": {
-        "ANTHROPIC_API_KEY": "sk-ant-..."
-      }
-    }
-  }
-}
-```
-
-### Claude Code
-
-Add to `.claude/mcp.json`:
-
-```json
-{
-  "mcpServers": {
-    "scheduler": {
-      "command": "mcp-scheduler"
-    }
-  }
-}
-```
-
-### API Key for cron
-
-The runner needs `ANTHROPIC_API_KEY` available when cron executes. Easiest approach:
+After install, set `ANTHROPIC_API_KEY` in your crontab so the runner can call Claude API:
 
 ```bash
 crontab -e
 # Add at the top:
 ANTHROPIC_API_KEY=sk-ant-...
 ```
+
+Then restart Claude Desktop / Claude Code to load the plugin.
 
 ## Tools
 
