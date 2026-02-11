@@ -2,7 +2,7 @@
 
 An MCP server that lets Claude schedule and manage recurring tasks via system cron.
 
-Tasks are stored in SQLite, cron handles execution timing, and a runner script calls the Claude API and delivers results.
+Tasks are stored in SQLite, cron handles execution timing, and a runner script calls the `claude` CLI to generate results — no API key required.
 
 ## Quick install
 
@@ -17,18 +17,15 @@ Or manually:
 ```bash
 git clone https://github.com/danielkristofik/mcp-scheduler.git
 cd mcp-scheduler
-pip install -e ".[runner]"
+pip install -e .
 ```
 
-After install, set `ANTHROPIC_API_KEY` in your crontab so the runner can call Claude API:
+### Prerequisites
 
-```bash
-crontab -e
-# Add at the top:
-ANTHROPIC_API_KEY=sk-ant-...
-```
+The task runner uses `claude -p` (Claude Code print mode) to generate responses.
+Make sure `claude` is in your PATH — it uses your existing Claude subscription, no API key needed.
 
-Then restart Claude Desktop / Claude Code to load the plugin.
+Restart Claude Desktop / Claude Code to load the plugin.
 
 ## Tools
 

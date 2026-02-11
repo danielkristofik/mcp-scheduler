@@ -38,7 +38,7 @@ def _init_db(conn: sqlite3.Connection) -> None:
             cron_expression TEXT NOT NULL,
             delivery_type TEXT NOT NULL DEFAULT 'file',
             delivery_config TEXT NOT NULL DEFAULT '{}',
-            model TEXT NOT NULL DEFAULT 'claude-sonnet-4-20250514',
+            model TEXT NOT NULL DEFAULT 'sonnet',
             max_tokens INTEGER NOT NULL DEFAULT 4096,
             enabled INTEGER NOT NULL DEFAULT 1,
             created_at TEXT NOT NULL,
@@ -66,7 +66,7 @@ def create_task(
     cron_expression: str,
     delivery_type: str = "file",
     delivery_config: Optional[dict] = None,
-    model: str = "claude-sonnet-4-20250514",
+    model: str = "sonnet",
     max_tokens: int = 4096,
 ) -> dict:
     """Create a new task definition. Returns the task dict."""

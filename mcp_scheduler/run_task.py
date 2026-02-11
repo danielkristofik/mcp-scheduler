@@ -2,13 +2,14 @@
 """
 Task runner - executed by cron for each scheduled task.
 1. Loads task definition from SQLite
-2. Calls Claude API with the task prompt
-3. Delivers the result (file, stdout, or future: email/slack/notes)
+2. Calls Claude CLI (claude -p) with the task prompt
+3. Delivers the result (file, stdout, append)
 """
 
 import argparse
 import json
-import os
+import shutil
+import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -17,40 +18,48 @@ from mcp_scheduler import task_store
 from mcp_scheduler.paths import get_output_dir
 
 
-def call_claude(prompt: str, model: str = "claude-sonnet-4-20250514", max_tokens: int = 4096) -> dict:
-    """Call Claude API and return the response.
+def call_claude(prompt: str, model: str = "sonnet") -> dict:
+    """Call Claude via the ``claude`` CLI in print mode.
 
-    Requires ANTHROPIC_API_KEY environment variable.
+    Uses ``claude -p --model <model> "prompt"`` which works with the
+    user's existing Claude subscription – no API key required.
     """
-    try:
-        from anthropic import Anthropic
-    except ImportError:
-        print("ERROR: anthropic package not installed. Run: pip install 'mcp-scheduler[runner]'", file=sys.stderr)
-        sys.exit(1)
+    claude_bin = shutil.which("claude")
+    if not claude_bin:
+        raise RuntimeError(
+            "claude CLI not found in PATH. "
+            "Install Claude Code: https://docs.anthropic.com/en/docs/claude-code"
+        )
 
-    api_key = os.environ.get("ANTHROPIC_API_KEY")
-    if not api_key:
-        raise RuntimeError("ANTHROPIC_API_KEY environment variable not set")
+    cmd = [
+        claude_bin,
+        "-p",
+        "--model", model,
+        "--output-format", "json",
+        prompt,
+    ]
 
-    client = Anthropic(api_key=api_key)
-
-    response = client.messages.create(
-        model=model,
-        max_tokens=max_tokens,
-        messages=[{"role": "user", "content": prompt}],
+    result = subprocess.run(
+        cmd,
+        capture_output=True,
+        text=True,
+        timeout=300,
     )
 
-    text = ""
-    for block in response.content:
-        if block.type == "text":
-            text += block.text
+    if result.returncode != 0:
+        stderr = result.stderr.strip()
+        raise RuntimeError(f"claude CLI exited with code {result.returncode}: {stderr}")
+
+    # --output-format json returns a JSON object with "result" key
+    try:
+        data = json.loads(result.stdout)
+        text = data.get("result", result.stdout)
+    except (json.JSONDecodeError, TypeError):
+        text = result.stdout
 
     return {
         "text": text,
-        "model": response.model,
-        "input_tokens": response.usage.input_tokens,
-        "output_tokens": response.usage.output_tokens,
-        "total_tokens": response.usage.input_tokens + response.usage.output_tokens,
+        "model": model,
     }
 
 
@@ -121,13 +130,12 @@ def run_task(task_id: str) -> None:
     print(f"[{datetime.now(timezone.utc).isoformat()}] Running task: {task['name']} ({task_id})")
 
     try:
-        # 3. Call Claude
+        # 3. Call Claude via CLI
         result = call_claude(
             prompt=task["prompt"],
-            model=task.get("model", "claude-sonnet-4-20250514"),
-            max_tokens=task.get("max_tokens", 4096),
+            model=task.get("model", "sonnet"),
         )
-        print(f"  Tokens used: {result['total_tokens']}")
+        print(f"  Model: {result['model']}")
 
         # 4. Deliver result
         delivery_type = task.get("delivery_type", "file")
@@ -143,7 +151,6 @@ def run_task(task_id: str) -> None:
             run_id,
             status="success",
             output_path=output_path,
-            tokens_used=result["total_tokens"],
         )
 
     except Exception as e:

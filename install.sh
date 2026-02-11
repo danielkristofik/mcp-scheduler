@@ -95,7 +95,7 @@ ok "Virtual environment at $VENV_DIR"
 # ── Install package ──────────────────────────────────────────────────
 info "Installing mcp-scheduler + dependencies"
 "$VENV_DIR/bin/pip" install --upgrade pip --quiet 2>/dev/null
-"$VENV_DIR/bin/pip" install -e "$INSTALL_DIR[runner]" --quiet
+"$VENV_DIR/bin/pip" install -e "$INSTALL_DIR" --quiet
 ok "Package installed"
 
 # Verify console scripts
@@ -220,16 +220,14 @@ CONF
 
 configure_claude_code
 
-# ── ANTHROPIC_API_KEY hint ───────────────────────────────────────────
-if [ -z "${ANTHROPIC_API_KEY:-}" ]; then
-    printf "\n${YELLOW}${BOLD}API Key Setup${NC}\n"
-    printf "The runner needs ANTHROPIC_API_KEY when cron executes tasks.\n"
-    printf "Add it to your crontab:\n\n"
-    printf "  ${BOLD}crontab -e${NC}\n"
-    printf "  # Add at the top:\n"
-    printf "  ${BOLD}ANTHROPIC_API_KEY=sk-ant-...${NC}\n\n"
+# ── Claude CLI check ─────────────────────────────────────────────────
+if command -v claude &>/dev/null; then
+    ok "claude CLI found ($(command -v claude))"
 else
-    ok "ANTHROPIC_API_KEY is set in environment"
+    warn "claude CLI not found in PATH"
+    printf "  The task runner uses ${BOLD}claude -p${NC} (print mode) to generate responses.\n"
+    printf "  Install Claude Code: ${BOLD}https://docs.anthropic.com/en/docs/claude-code${NC}\n"
+    printf "  No API key needed — it uses your existing Claude subscription.\n\n"
 fi
 
 # ── Summary ──────────────────────────────────────────────────────────

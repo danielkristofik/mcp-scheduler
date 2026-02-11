@@ -4,7 +4,7 @@ Claude Scheduler MCP Server
 
 A thin MCP wrapper over system cron that lets Claude schedule and manage
 recurring tasks. Tasks are stored in SQLite, cron handles execution timing,
-and a runner script calls Claude API + delivers results.
+and a runner script calls Claude CLI + delivers results.
 
 Tools:
   - scheduler_add_task:     Create a scheduled task + install cron job
@@ -69,14 +69,8 @@ class AddTaskInput(BaseModel):
         ),
     )
     model: str = Field(
-        default="claude-sonnet-4-20250514",
-        description="Claude model to use (e.g., 'claude-sonnet-4-20250514', 'claude-haiku-4-5-20251001')",
-    )
-    max_tokens: int = Field(
-        default=4096,
-        description="Maximum tokens for Claude's response",
-        ge=100,
-        le=64000,
+        default="sonnet",
+        description="Claude model alias or full name (e.g., 'sonnet', 'opus', 'haiku')",
     )
 
 
@@ -97,8 +91,7 @@ class UpdateTaskInput(BaseModel):
     cron_expression: Optional[str] = Field(default=None, description="New cron expression")
     delivery_type: Optional[str] = Field(default=None, description="New delivery type")
     delivery_config: Optional[dict] = Field(default=None, description="New delivery config")
-    model: Optional[str] = Field(default=None, description="New model")
-    max_tokens: Optional[int] = Field(default=None, description="New max tokens", ge=100, le=64000)
+    model: Optional[str] = Field(default=None, description="New model alias or full name")
 
 
 class TaskHistoryInput(BaseModel):
@@ -152,7 +145,6 @@ async def scheduler_add_task(params: AddTaskInput) -> str:
             delivery_type=params.delivery_type,
             delivery_config=params.delivery_config,
             model=params.model,
-            max_tokens=params.max_tokens,
         )
 
         # Install cron job
