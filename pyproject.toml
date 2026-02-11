@@ -1,0 +1,34 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "mcp-scheduler"
+version = "0.1.0"
+description = "MCP server for scheduling Claude tasks via system cron"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+authors = [{ name = "dano" }]
+keywords = ["mcp", "claude", "scheduler", "cron"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+]
+dependencies = [
+    "mcp[cli]>=1.0.0",
+    "pydantic>=2.0.0",
+    "python-crontab>=3.0.0",
+]
+
+[project.optional-dependencies]
+runner = ["anthropic>=0.40.0"]
+dev = ["pytest>=8.0", "pytest-asyncio>=0.23"]
+
+[project.scripts]
+mcp-scheduler = "mcp_scheduler.__main__:main"
+mcp-scheduler-run = "mcp_scheduler.run_task:main"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
